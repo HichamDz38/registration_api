@@ -9,7 +9,7 @@ import crud
 import models
 import schemas
 from database import SessionLocal, engine, raw_database
-
+from mailjet_api import send_email
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -47,6 +47,10 @@ async def del_user(user_id: int, db: Session = Depends(get_db)):
 async def register_user(user_data: schemas.User, db: Session = Depends(get_db)):
     user = await crud.add_user(user_data, db, raw_database)
     if user:
+        result = send_email(user_data.server,
+                            user_data.email,
+                            user_data.first_name,
+                            user_data.last_name)
         return user
     else:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
