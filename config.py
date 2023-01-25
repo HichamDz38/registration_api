@@ -17,6 +17,9 @@ class Settings(BaseSettings):
 
     CLIENT_ORIGIN: str
 
+    MJ_APIKEY_PUBLIC: str
+    MJ_APIKEY_PRIVATE: str
+
     class Config:
         env_file = './.env'
 
