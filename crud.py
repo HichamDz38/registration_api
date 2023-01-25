@@ -8,23 +8,23 @@ from sqlalchemy.sql import text
 from models import User
 import models, schemas
 
-def get_user(user_id: int, db: Session):
-    user = db.query(models.User.id,
-                    models.User.first_name,
-                    models.User.last_name,
-                    models.User.email,
-                    models.User.birth_date
-    ).filter(models.User.id==user_id
-    ).first()
+async def get_user(email: int, db: Session):
+    user = db.query(User).from_statement(
+        text("""SELECT * FROM "user" WHERE email=:email order by id DESC limit 1""")
+    ).params(email=email).first()
+    # return the inserted record
     return user
 
-def del_user(user_id: int, db: Session):
+
+async def del_user(user_id: int, db: Session):
     user = db.query(models.User).filter(models.User.user_id==user_id).first()
     db.delete(user)
     db.commit()
     return user
 
-async def add_user(user_data : schemas.User, db: Session, raw_database):
+async def add_user(user_data : schemas.User, db: Session,
+                    raw_database, pin_code):
+    print(pin_code)
     """
     # this is the implementation using orm
     user = models.User(birth_date=user_data.birth_date,
@@ -41,45 +41,29 @@ async def add_user(user_data : schemas.User, db: Session, raw_database):
     # this is the imp without using ORM
     #raw_database.connect()
     await raw_database.connect()
-    """
-    print('INSERT INTO "user" (email,password,\
-                        first_name,\
-                        last_name,\
-                        birth_date,\
-                        server) values ("{}","{}","{}","{}","{}","{}")'.format(
-                                        user_data.email,
-                                        user_data.password,
-                                        user_data.first_name,
-                                        user_data.last_name,
-                                        user_data.birth_date,
-                                        user_data.server,
-    ))
-    """
     results =  await raw_database.execute("""INSERT INTO "user" (email,password,\
                         first_name,\
                         last_name,\
                         birth_date,\
-                        server) values ('{}','{}','{}','{}','{}','{}')""".format(
+                        server,\
+                        key,\
+                        activated) values \
+                        ('{}','{}','{}','{}','{}','{}','{}',FALSE)""".format(
                                         user_data.email,
                                         user_data.password,
                                         user_data.first_name,
                                         user_data.last_name,
                                         user_data.birth_date,
                                         user_data.server,
-    ))
-    print(results)
-    sql = text("SELECT * FROM user where email= :email")
-    """
-    results =  await raw_database.fetch_all(query=sql,
-                        values={"email": user_data.email})
-    """
+                                        pin_code
+                    ))
+
     user = db.query(User).from_statement(
         text("""SELECT * FROM "user" WHERE email=:email order by id DESC limit 1""")
     ).params(email=user_data.email).first()
-
+    await raw_database.disconnect()
     # return the inserted record
     return user
-
 
 
 def put_user(user_id: int, user_data : schemas.User, db: Session):
@@ -125,3 +109,24 @@ def put_user(user_id: int, user_data : schemas.User, db: Session):
     ).all()
     responce = {'data' : users}
     return responce
+
+
+async def validate_user(username, password, key, raw_database, db:Session):
+    user = db.query(User).from_statement(
+        text("""SELECT * FROM "user" WHERE email=:email and \
+            password:=password\
+            order by id DESC limit 1""")
+    ).params(email=username,
+             password=password,
+             ).first()
+        
+    if user:
+        if key == user.key:
+            result =  await raw_database.execute("""UPDATE user SET,\
+                        validated=True)""")
+            await raw_database.disconnect()
+            return True
+    else:
+        await raw_database.disconnect()
+        return False
+    

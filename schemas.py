@@ -12,6 +12,8 @@ class User(BaseModel):
     last_name: str = None
     birth_date: date = None
     server: str = None
+    key: str
+    activated: bool = False
 
     class Config:
         orm_mode = False

@@ -1,11 +1,8 @@
 # coding: utf-8
 import uuid
 from database import Base
-from sqlalchemy import TIMESTAMP, Column, ForeignKey,\
+from sqlalchemy import TIMESTAMP, Column, ForeignKey, Boolean,\
                        String, Boolean, text, Date, Integer, Identity
-from sqlalchemy.dialects.postgresql import UUID
-
-from fastapi_utils.guid_type import GUID, GUID_DEFAULT_SQLITE
 
 metadata = Base.metadata
 
@@ -19,3 +16,5 @@ class User(Base):
     last_name = Column(String(20), nullable=True)
     birth_date = Column(Date, nullable=True)
     server = Column(String(20), nullable=True)
+    key = Column(String(4), nullable=True)
+    activated = Column(Boolean, nullable=True)

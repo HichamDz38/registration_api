@@ -1,6 +1,6 @@
 from typing import List
 from urllib import response
-import uvicorn
+from pydantic import EmailStr
 from fastapi import FastAPI, Depends, HTTPException, status,\
                     APIRouter, Response
 from sqlalchemy.orm import Session
@@ -9,10 +9,13 @@ import crud
 import models
 import schemas
 from database import SessionLocal, engine, raw_database
-from mailjet_api import send_email
+from funcs import send_email, generate_key
 models.Base.metadata.create_all(bind=engine)
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+
 
 app = FastAPI()
+security = HTTPBasic()
 
 
 # Dependency
@@ -24,9 +27,9 @@ def get_db():
         db.close()
 
 
-@app.get("/users/{emp_id}", response_model=schemas.User)
-async def get_user(emp_id: int, db: Session = Depends(get_db)):
-    user = await crud.get_employee(emp_id, db)
+@app.get("/users/{user.id}", response_model=schemas.User)
+async def get_user(id: int, db: Session = Depends(get_db)):
+    user = await crud.get_user(id, db)
     if user:
         return user
     else:
@@ -45,12 +48,15 @@ async def del_user(user_id: int, db: Session = Depends(get_db)):
 
 @app.post("/users/")
 async def register_user(user_data: schemas.User, db: Session = Depends(get_db)):
-    user = await crud.add_user(user_data, db, raw_database)
+    pin_code = generate_key()
+    user = await crud.add_user(user_data, db, raw_database, pin_code)
     if user:
         result = send_email(user_data.server,
                             user_data.email,
+                            pin_code,
                             user_data.first_name,
-                            user_data.last_name)
+                            user_data.last_name
+                            )
         return user
     else:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -68,8 +74,25 @@ async def put_employee(user_data: schemas.User_update,
 @app.patch("/users/{user_id}" )
 async def patch_user(user_data: schemas.User_update,
                  db: Session = Depends(get_db)):
-    user = await crud.patch_employee(user_data, db)
+    user = await crud.patch_user(user_data, db)
     if user:
         return user
     else:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.post("/users/validation/{key}")
+async def validate_user(key:str,
+                        raw_database,
+                        db: Session = Depends(get_db),
+                        credentials: HTTPBasicCredentials\
+                        = Depends(security)):
+    stat = crud.validate_user(credentials.username, 
+                        credentials.password,
+                        key,
+                        db,
+                        raw_database)
+    if status:
+        return Response(status_code=status.HTTP_200_OK) 
+    else:
+        return Response(status_code=status.HTTP_401_UNAUTHORIZED)
