@@ -39,10 +39,9 @@ async def add_user(user_data : schemas.User, db: Session, raw_database):
     return user
     """
     # this is the imp without using ORM
-    print("without using orm")
     #raw_database.connect()
-    print("without using orm oh yeah")
     await raw_database.connect()
+    """
     print('INSERT INTO "user" (email,password,\
                         first_name,\
                         last_name,\
@@ -55,6 +54,7 @@ async def add_user(user_data : schemas.User, db: Session, raw_database):
                                         user_data.birth_date,
                                         user_data.server,
     ))
+    """
     results =  await raw_database.execute("""INSERT INTO "user" (email,password,\
                         first_name,\
                         last_name,\
@@ -67,22 +67,20 @@ async def add_user(user_data : schemas.User, db: Session, raw_database):
                                         user_data.birth_date,
                                         user_data.server,
     ))
-    return results
-    """
+    print(results)
     sql = text("SELECT * FROM user where email= :email")
-
+    """
     results =  await raw_database.fetch_all(query=sql,
                         values={"email": user_data.email})
-    
-    user = db.query(User).from_statement(
-        text("SELECT * FROM user WHERE email=:email")
-    ).params(email=user_data.email).all()
-
-    # View the records
-    print(user)
-    #return {results.email, results.password}
-    return user
     """
+    user = db.query(User).from_statement(
+        text("""SELECT * FROM "user" WHERE email=:email order by id DESC limit 1""")
+    ).params(email=user_data.email).first()
+
+    # return the inserted record
+    return user
+
+
 
 def put_user(user_id: int, user_data : schemas.User, db: Session):
     update_data = user_data.dict(exclude_unset=True)
