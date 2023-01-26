@@ -44,7 +44,8 @@ async def del_user(user_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/users/")
-async def register_user(user_data: schemas.User, db: Session = Depends(get_db)):
+async def register_user(user_data: schemas.User,
+                        db: Session = Depends(get_db)):
     pin_code = generate_key()
     user = await crud.add_user(user_data, db, raw_database, pin_code)
     if user:
@@ -59,18 +60,19 @@ async def register_user(user_data: schemas.User, db: Session = Depends(get_db)):
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@app.put("/users/{user_id}" )
-async def put_employee(user_data: schemas.User_update,
-                 db: Session = Depends(get_db)):
-    user = await crud.put_employee(user_data, db)
+@app.put("/users/{user_id}")
+async def put_users(user_data: schemas.User_update,
+                    db: Session = Depends(get_db)):
+    user = await crud.put_user(user_data, db)
     if user:
         return user
     else:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-@app.patch("/users/{user_id}" )
+
+@app.patch("/users/{user_id}")
 async def patch_user(user_data: schemas.User_update,
-                 db: Session = Depends(get_db)):
+                     db: Session = Depends(get_db)):
     user = await crud.patch_user(user_data, db)
     if user:
         return user
@@ -79,15 +81,15 @@ async def patch_user(user_data: schemas.User_update,
 
 
 @app.get("/users/validation/")
-async def validate_user(key:str,
+async def validate_user(key: str,
                         db: Session = Depends(get_db),
-                        credentials: HTTPBasicCredentials\
+                        credentials: HTTPBasicCredentials
                         = Depends(security)):
-    response = await crud.validate_user(credentials.username, 
-                        credentials.password,
-                        key,
-                        db,
-                        raw_database)
+    response = await crud.validate_user(credentials.username,
+                                        credentials.password,
+                                        key,
+                                        db,
+                                        raw_database)
     if response:
         return Response(status_code=status.HTTP_200_OK)
     else:

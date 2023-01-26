@@ -18,5 +18,6 @@ class User(BaseModel):
     class Config:
         orm_mode = False
 
+
 class User_update(User):
     pass
