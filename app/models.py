@@ -20,10 +20,12 @@ class User(Base):
     is_activated = Column(Boolean, nullable=True)
     time_created = Column(TIMESTAMP(timezone=True), server_default=func.now())
     time_updated = Column(TIMESTAMP(timezone=True), onupdate=func.now())
-    __table_args__ = (UniqueConstraint("email", "server", name="already_existed"),)
+    __table_args__ = (UniqueConstraint("email", "server",
+                                       name="already_existed"),)
 
 
 class Validation(Base):
+    __tablename__ = 'validation'
     id = Column(Integer, Identity(cycle=True), primary_key=True)
     user_id = Column(Integer, ForeignKey("User.id"), unique=True)
     pin_code = Column(String(4), nullable=False)

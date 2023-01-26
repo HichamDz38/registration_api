@@ -4,7 +4,7 @@ from fastapi import FastAPI, Depends, status,\
 from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.database import SessionLocal, engine, raw_database
-from app.funcs import send_email, generate_key
+from app.funcs import send_email, generate_key, generate_url
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from asyncpg import exceptions
 
@@ -46,23 +46,28 @@ async def del_user(email: EmailStr, request: Request,
 
 
 @app.post("/users/")
-async def register_user(user_data: schemas.User,
+async def add_user(user_data: schemas.User,
                         request: Request,
                         db: Session = Depends(get_db)):
     client_host = request.client.host
     pin_code = generate_key()
+    url = generate_url()
     try:
-        user = await crud.add_user(user_data, client_host, pin_code,
+        user = await crud.add_user(user_data, client_host,
                                    raw_database, db)
     except exceptions.UniqueViolationError:
         return Response(status_code=status.HTTP_409_CONFLICT)
     if user:
-        result = send_email(client_host,
+        email_status = send_email(client_host,
                             user_data.email,
                             pin_code,
                             user_data.first_name,
                             user_data.last_name
                             )
+        print(email_status)
+        validation = await crud.add_validation(user.id, pin_code,
+                                               url, raw_database)
+        print(validation)
         return user
     else:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -88,16 +93,18 @@ async def patch_user(user_data: schemas.User_update,
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@app.get("/users/validation/")
+@app.get("/users/validation/{url}")
 async def validate_user(pin_code: str,
+                        url: str,
                         request: Request,
                         db: Session = Depends(get_db),
                         credentials: HTTPBasicCredentials
                         = Depends(security)):
-    client_host = request.client.host
+    validation = await crud.get_validation(url, raw_database)
+    print(validation)
     response = await crud.validate_user(credentials.username,
                                         credentials.password,
-                                        client_host,
+                                        url,
                                         pin_code,
                                         db,
                                         raw_database)

@@ -6,7 +6,7 @@ from app import models, schemas
 NoneType = type(None)
 
 
-async def get_user(email: EmailStr, client_host: str, raw_database, db: Session):
+async def get_user(email: EmailStr, client_host: str, raw_database):
     """select user from email and server without ORM"""
     await raw_database.connect() # connect raw db
     user = await raw_database.fetch_one("""SELECT * FROM "user" WHERE email='{}' \
@@ -16,7 +16,17 @@ async def get_user(email: EmailStr, client_host: str, raw_database, db: Session)
     return dict(user)
 
 
-async def del_user(email: EmailStr, client_host: str, raw_database, db: Session):
+async def get_user_by_id(user_id: int, raw_database):
+    """select user from email and server without ORM"""
+    await raw_database.connect() # connect raw db
+    user = await raw_database.fetch_one("""SELECT * FROM "user" WHERE id='{}' \
+            AND server='{}' limit 1""".format(user_id))
+    await raw_database.disconnect() # connect raw db
+    # return the selected user
+    return dict(user)
+
+
+async def del_user(email: EmailStr, client_host: str, raw_database):
     """delete user based on  email and server without ORM"""
     await raw_database.connect() # connect raw db
     await raw_database.execute("""DELETE FROM "user" WHERE email='{}' \
@@ -47,7 +57,6 @@ async def add_user(user_data: schemas.User,
     """
 
     # the imp without using ORM
-
     await raw_database.connect()
     await raw_database.execute("""INSERT INTO "user" (email,\
                         password,\
@@ -57,39 +66,56 @@ async def add_user(user_data: schemas.User,
                         server,\
                         pin_code,\
                         is_activated) values \
-                        ('{}','{}','{}','{}','{}','{}','{}',FALSE)""".format(
+                        ('{}','{}','{}','{}','{}','{}',FALSE)""".format(
                                         user_data.email,
                                         user_data.password,
                                         user_data.first_name,
                                         user_data.last_name,
                                         user_data.birth_date,
                                         client_host,
-                                        pin_code
                     ))
     await raw_database.disconnect()
     # the insert statement return None,  this is why we have to do select
     # in order to return the the user data
-    return await get_user(user_data.email, client_host, raw_database, db)
-    
+    return await get_user(user_data.email, client_host, raw_database)
 
 
-async def put_user(user_id: int, user_data: schemas.User, db: Session):
+async def put_user(user_id: int, user_data: schemas.User):
     pass
 
 
-async def validate_user(username, password, pin_code,
-                        db: Session, raw_database):
-    user = db.query(models.User).from_statement(
-        text("""SELECT * FROM "user" WHERE email=:email AND \
-            password=:secret_pass order by id DESC limit 1""")
-    ).params(email=username,
-             password=password,
-             ).first()
+async def add_validation(user_id:int, pin_code:str, url:str, raw_database):
+    """add a Validation routine"""
+    await raw_database.connect()
+    await raw_database.execute("""INSERT INTO "Validation" (user_id,\
+                        pin_code,\
+                        url) values \
+                        ('{}','{}','{}')""".format(user_id,
+                                                   pin_code,
+                                                   url))
+    await raw_database.disconnect()
+    """as we said before insert return nothing, this is why i am returning the
+    crud.get_validation"""
+    return get_validation(url, raw_database)
+
+
+async def get_validation(url: str, raw_database):
+    """select validation based on the url without ORM"""
+    await raw_database.connect() # connect raw db
+    validation = await raw_database.fetch_one("""SELECT * FROM "validation"\
+         WHERE url='{}' limit 1""".format(url))
+    await raw_database.disconnect() # connect raw db
+    # return the selected user
+    return dict(validation)
+
+
+async def validate_user(username, password, url, pin_code, raw_database):
+    user = await get_user(username, raw_database)
     if user:
-        if pin_code == user.pin_code:
+        if password == user.password and pin_code == user.pin_code:
             await raw_database.connect()
             result = await raw_database.execute("""UPDATE user SET,\
-                        validated=True)""")
+                        is_activated=True)""")
             await raw_database.disconnect()
             return user
         else:

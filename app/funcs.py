@@ -1,9 +1,13 @@
 from mailjet_rest import Client
 from app.config import settings
 from random import choices
+import string
 
-api_key = settings.MJ_APIKEY_PUBLIC
-api_secret = settings.MJ_APIKEY_PRIVATE
+"""for this project i am using mailjet Free, wich hase 200 email in total"""
+api_key = settings.MJ_APIKEY_PUBLIC  # api key of mailjet account
+api_secret = settings.MJ_APIKEY_PRIVATE  # privet key of mailjet account
+# using python lib to communicate with the API, we can still use just requests,
+# if we want to not use this library
 mailjet = Client(auth=(api_key, api_secret), version='v3')
 
 
@@ -34,3 +38,8 @@ def send_email(server, email, pin_code, firstname="", lastname=""):
 def generate_key():
     "generate string of 4 random digits"
     return "".join(choices("0123456789", k=4))
+
+
+def generate_url():
+    "generation string of 10 characters as a short url pattern"
+    return "".join(choices(string.ascii_letters, 10))
