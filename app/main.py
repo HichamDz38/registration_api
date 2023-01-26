@@ -1,6 +1,6 @@
 from pydantic import EmailStr
 from fastapi import FastAPI, Depends, status,\
-                    Response, Request
+                    Response, Request, HTTPException
 from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.database import SessionLocal, engine, raw_database
@@ -37,9 +37,9 @@ async def get_user(email: EmailStr, request: Request,
 async def del_user(email: EmailStr, request: Request,
                    db: Session = Depends(get_db)):
     client_host = request.client.host
-    user = await crud.get_user(email, client_host, raw_database, db)
+    user = await crud.get_user(email, client_host, raw_database)
     if user:
-        await crud.del_user(email, client_host, raw_database, db)
+        await crud.del_user(email, client_host, raw_database)
         return user
     else:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
@@ -68,7 +68,6 @@ async def add_user(user_data: schemas.User,
         assert email_status.status_code == 200
         validation = await crud.add_validation(user["id"], pin_code,
                                                url, raw_database)
-        print(validation)
         return user
     else:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -100,13 +99,18 @@ async def validate_user(url: str,
                         credentials: HTTPBasicCredentials
                         = Depends(security)):
     validation = await crud.get_validation(url, raw_database)
-    print(validation)
-    response = await crud.validate_user_by_url(credentials.username,
+    try:
+        response = await crud.validate_user_by_url(credentials.username,
                                         credentials.password,
                                         url,
-                                        db,
                                         raw_database)
+    except TimeoutError:
+        return Response(status_code=status.HTTP_408_REQUEST_TIMEOUT)
+    except AttributeError:
+        return Response(status_code=status.HTTP_401_UNAUTHORIZED)
+    except ValueError:
+        return Response(status_code=status.HTTP_404_NOT_FOUND)
     if response:
         return Response(status_code=status.HTTP_200_OK)
     else:
-        return Response(status_code=status.HTTP_401_UNAUTHORIZED)
+        return Response(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)

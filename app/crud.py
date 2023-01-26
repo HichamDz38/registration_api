@@ -1,7 +1,7 @@
-from sqlalchemy.sql import text
 from sqlalchemy.orm import Session
 from pydantic import EmailStr
 from app import models, schemas
+from datetime import datetime, timezone
 
 NoneType = type(None)
 
@@ -19,8 +19,8 @@ async def get_user(email: EmailStr, client_host: str, raw_database):
 async def get_user_by_id(user_id: int, raw_database):
     """select user from email and server without ORM"""
     await raw_database.connect() # connect raw db
-    user = await raw_database.fetch_one("""SELECT * FROM "user" WHERE id='{}' \
-            AND server='{}' limit 1""".format(user_id))
+    user = await raw_database.fetch_one("""SELECT * FROM "user" WHERE id='{}'\
+            """.format(user_id))
     await raw_database.disconnect() # connect raw db
     # return the selected user
     return dict(user)
@@ -110,19 +110,23 @@ async def get_validation(url: str, raw_database):
 async def validate_user_by_url(username, password, url, raw_database):
     validation = await get_validation(url, raw_database)
     if validation:
-        print(validation["time_email_sent"])
+        sent_time = validation["time_email_sent"]
+        actual_time = datetime.now(timezone.utc)
+        timing = actual_time-sent_time
+        if timing.total_seconds()>60:
+           raise TimeoutError 
         user_id = validation["user_id"]
         user = await get_user_by_id(user_id, raw_database)
         if user:
-            if password == user.password and pin_code == user.pin_code:
+            if password == user["password"] and username == user["email"]:
                 await raw_database.connect()
-                result = await raw_database.execute("""UPDATE user SET,\
-                        is_activated=True)""")
+                result = await raw_database.execute("""UPDATE "user" SET \
+                    is_activated=True where id={}""".format(user_id))
                 await raw_database.disconnect()
                 return user
             else:
-                return False
+                raise AttributeError
         else:
             return False
     else:
-        return False
+        raise ValueError
