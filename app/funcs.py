@@ -16,7 +16,8 @@ def get_hostname():
     """here we get the ipaddress of the server
     in realife ill just use the domain name without port => defaut 443"""
     return socket.gethostbyname(socket.gethostname())
-    
+
+
 def send_email(server, email, pin_code, url, firstname="", lastname=""):
     """send email using a Mailjet REST API"""
     name = firstname or lastname

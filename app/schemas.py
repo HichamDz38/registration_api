@@ -10,7 +10,7 @@ class User(BaseModel):
     password: str
     first_name: str = None
     last_name: str = None
-    birth_date: date = None    
+    birth_date: date = None
 
     class Config:
         orm_mode = False

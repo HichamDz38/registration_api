@@ -26,7 +26,7 @@ def get_db():
 async def get_user(email: EmailStr, request: Request,
                    db: Session = Depends(get_db)):
     client_host = request.client.host
-    user = await crud.get_user(email, client_host, raw_database, db)
+    user = await crud.get_user(email, client_host, raw_database)
     if user:
         return user
     else:
@@ -47,8 +47,8 @@ async def del_user(email: EmailStr, request: Request,
 
 @app.post("/users/")
 async def add_user(user_data: schemas.User,
-                        request: Request,
-                        db: Session = Depends(get_db)):
+                   request: Request,
+                   db: Session = Depends(get_db)):
     client_host = request.client.host
     pin_code = generate_key()
     url = generate_url()
@@ -59,12 +59,11 @@ async def add_user(user_data: schemas.User,
         return Response(status_code=status.HTTP_409_CONFLICT)
     if user:
         email_status = send_email(client_host,
-                            user_data.email,
-                            pin_code,
-                            url,
-                            user_data.first_name,
-                            user_data.last_name
-                            )
+                                  user_data.email,
+                                  pin_code,
+                                  url,
+                                  user_data.first_name,
+                                  user_data.last_name)
         assert email_status.status_code == 200
         validation = await crud.add_validation(user["id"], pin_code,
                                                url, raw_database)
@@ -98,15 +97,15 @@ async def validate_user(url: str,
                         db: Session = Depends(get_db),
                         credentials: HTTPBasicCredentials
                         = Depends(security)):
-    try:                    
+    try:
         await crud.get_validation(url, raw_database)
     except ValueError:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     try:
         response = await crud.validate_user_by_url(credentials.username,
-                                        credentials.password,
-                                        url,
-                                        raw_database)
+                                                   credentials.password,
+                                                   url,
+                                                   raw_database)
     except TimeoutError:
         return Response(status_code=status.HTTP_408_REQUEST_TIMEOUT)
     except AttributeError:
