@@ -2,7 +2,7 @@ from typing import List
 from urllib import response
 from pydantic import EmailStr
 from fastapi import FastAPI, Depends, HTTPException, status,\
-                    APIRouter, Response
+                    APIRouter, Response, Request
 from sqlalchemy.orm import Session
 from fastapi.responses import JSONResponse
 from app import crud, models, schemas
@@ -45,9 +45,12 @@ async def del_user(user_id: int, db: Session = Depends(get_db)):
 
 @app.post("/users/")
 async def register_user(user_data: schemas.User,
+                        request: Request,
                         db: Session = Depends(get_db)):
+    client_host = request.client.host
     pin_code = generate_key()
-    user = await crud.add_user(user_data, db, raw_database, pin_code)
+    user = await crud.add_user(user_data, client_host, pin_code,
+                               raw_database, db)
     if user:
         result = send_email(user_data.server,
                             user_data.email,

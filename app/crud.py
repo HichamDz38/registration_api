@@ -26,9 +26,11 @@ async def del_user(user_id: int, db: Session):
     return user
 
 
-async def add_user(user_data: schemas.User, db: Session,
-                   raw_database, pin_code):
-    print(pin_code)
+async def add_user(user_data: schemas.User,
+                   client_host: str,
+                   pin_code: str,
+                   raw_database,
+                   db: Session,):
     """
     # this is the implementation using orm
     user = models.User(birth_date=user_data.birth_date,
@@ -60,7 +62,7 @@ async def add_user(user_data: schemas.User, db: Session,
                                         user_data.first_name,
                                         user_data.last_name,
                                         user_data.birth_date,
-                                        user_data.server,
+                                        client_host,
                                         pin_code
                     ))
 
