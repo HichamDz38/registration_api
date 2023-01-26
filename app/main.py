@@ -64,8 +64,8 @@ async def add_user(user_data: schemas.User,
                             user_data.first_name,
                             user_data.last_name
                             )
-        print(email_status)
-        validation = await crud.add_validation(user.id, pin_code,
+        assert email_status.status_code == 200
+        validation = await crud.add_validation(user["id"], pin_code,
                                                url, raw_database)
         print(validation)
         return user

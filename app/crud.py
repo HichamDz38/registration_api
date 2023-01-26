@@ -38,7 +38,6 @@ async def del_user(email: EmailStr, client_host: str, raw_database):
 
 async def add_user(user_data: schemas.User,
                    client_host: str,
-                   pin_code: str,
                    raw_database,
                    db: Session,):
     """
@@ -64,7 +63,6 @@ async def add_user(user_data: schemas.User,
                         last_name,\
                         birth_date,\
                         server,\
-                        pin_code,\
                         is_activated) values \
                         ('{}','{}','{}','{}','{}','{}',FALSE)""".format(
                                         user_data.email,

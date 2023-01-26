@@ -42,4 +42,4 @@ def generate_key():
 
 def generate_url():
     "generation string of 10 characters as a short url pattern"
-    return "".join(choices(string.ascii_letters, 10))
+    return "".join(choices(string.ascii_letters, k=10))

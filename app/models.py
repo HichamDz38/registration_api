@@ -27,7 +27,7 @@ class User(Base):
 class Validation(Base):
     __tablename__ = 'validation'
     id = Column(Integer, Identity(cycle=True), primary_key=True)
-    user_id = Column(Integer, ForeignKey("User.id"), unique=True)
+    user_id = Column(Integer, ForeignKey("user.id"), unique=True)
     pin_code = Column(String(4), nullable=False)
     url = Column(String(20), nullable=False)
     time_email_sent = Column(TIMESTAMP(timezone=True),
