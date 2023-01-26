@@ -104,7 +104,20 @@ async def get_validation(url: str, raw_database):
          WHERE url='{}' limit 1""".format(url))
     await raw_database.disconnect() # connect raw db
     # return the selected user
-    return dict(validation)
+    if validation:
+        return dict(validation)
+    else:
+        raise ValueError
+
+
+async def del_validation(url: str, raw_database):
+    """select validation based on the url without ORM"""
+    await raw_database.connect() # connect raw db
+    validation = await raw_database.fetch_one("""DELETE FROM "validation"\
+         WHERE url='{}' """.format(url))
+    await raw_database.disconnect() # connect raw db
+    # return the selected user
+    return True
 
 
 async def validate_user_by_url(username, password, url, raw_database):
@@ -114,7 +127,8 @@ async def validate_user_by_url(username, password, url, raw_database):
         actual_time = datetime.now(timezone.utc)
         timing = actual_time-sent_time
         if timing.total_seconds()>60:
-           raise TimeoutError 
+            await del_validation(url, raw_database)
+            raise TimeoutError 
         user_id = validation["user_id"]
         user = await get_user_by_id(user_id, raw_database)
         if user:
@@ -123,6 +137,7 @@ async def validate_user_by_url(username, password, url, raw_database):
                 result = await raw_database.execute("""UPDATE "user" SET \
                     is_activated=True where id={}""".format(user_id))
                 await raw_database.disconnect()
+                await del_validation(url, raw_database)
                 return user
             else:
                 raise AttributeError

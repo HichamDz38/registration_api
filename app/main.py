@@ -98,7 +98,10 @@ async def validate_user(url: str,
                         db: Session = Depends(get_db),
                         credentials: HTTPBasicCredentials
                         = Depends(security)):
-    validation = await crud.get_validation(url, raw_database)
+    try:                    
+        await crud.get_validation(url, raw_database)
+    except ValueError:
+        return Response(status_code=status.HTTP_404_NOT_FOUND)
     try:
         response = await crud.validate_user_by_url(credentials.username,
                                         credentials.password,
