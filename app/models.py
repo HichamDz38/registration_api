@@ -1,20 +1,33 @@
 # coding: utf-8
-import uuid
 from app.database import Base
-from sqlalchemy import TIMESTAMP, Column, ForeignKey, Boolean,\
-                       String, Boolean, text, Date, Integer, Identity
+from sqlalchemy.sql import func
+from sqlalchemy import TIMESTAMP, Column, Boolean, UniqueConstraint, \
+                       String, Boolean, Date, Integer, Identity, ForeignKey
 
 metadata = Base.metadata
 
 
 class User(Base):
     __tablename__ = 'user'
-    id = Column(Integer, Identity(start=42, cycle=True), primary_key=True)
+    id = Column(Integer, Identity(cycle=True), primary_key=True)
     email = Column(String, nullable=False)
     password = Column(String, nullable=False)
     first_name = Column(String(20), nullable=True)
     last_name = Column(String(20), nullable=True)
     birth_date = Column(Date, nullable=True)
     server = Column(String(20), nullable=True)
-    key = Column(String(4), nullable=True)
-    activated = Column(Boolean, nullable=True)
+    pin_code = Column(String(4), nullable=True)
+    is_activated = Column(Boolean, nullable=True)
+    time_created = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    time_updated = Column(TIMESTAMP(timezone=True), onupdate=func.now())
+    __table_args__ = (UniqueConstraint("email", "server", name="already_existed"),)
+
+
+class Validation(Base):
+    id = Column(Integer, Identity(cycle=True), primary_key=True)
+    user_id = Column(Integer, ForeignKey("User.id"), unique=True)
+    pin_code = Column(String(4), nullable=False)
+    url = Column(String(20), nullable=False)
+    time_email_sent = Column(TIMESTAMP(timezone=True),
+                             server_default=func.now(),
+                             onupdate=func.now())

@@ -1,29 +1,29 @@
-from urllib import response
-from sqlalchemy.orm import Session
-from fastapi.encoders import jsonable_encoder
-from sqlalchemy.dialects.postgresql import UUID
-import json
 from sqlalchemy.sql import text
+from sqlalchemy.orm import Session
+from pydantic import EmailStr
 from app import models, schemas
 
 NoneType = type(None)
 
 
-async def get_user(email: int, db: Session):
-    user = db.query(models.User).from_statement(
-        text("""SELECT * FROM "user" WHERE email=:email \
-            order by id DESC limit 1""")
-    ).params(email=email).first()
-    # return the inserted record
-    return user
+async def get_user(email: EmailStr, client_host: str, raw_database, db: Session):
+    """select user from email and server without ORM"""
+    await raw_database.connect() # connect raw db
+    user = await raw_database.fetch_one("""SELECT * FROM "user" WHERE email='{}' \
+            AND server='{}' limit 1""".format(email, client_host))
+    await raw_database.disconnect() # connect raw db
+    # return the selected user
+    return dict(user)
 
 
-async def del_user(user_id: int, db: Session):
-    user = db.query(models.User).filter(models.User.user_id == user_id
-                                        ).first()
-    db.delete(user)
-    db.commit()
-    return user
+async def del_user(email: EmailStr, client_host: str, raw_database, db: Session):
+    """delete user based on  email and server without ORM"""
+    await raw_database.connect() # connect raw db
+    await raw_database.execute("""DELETE FROM "user" WHERE email='{}' \
+        AND server='{}'""".format(email, client_host))
+    await raw_database.disconnect() # disconnect raw db
+    # return True after doing the delete
+    return True
 
 
 async def add_user(user_data: schemas.User,
@@ -32,6 +32,7 @@ async def add_user(user_data: schemas.User,
                    raw_database,
                    db: Session,):
     """
+    # register/add user
     # this is the implementation using orm
     user = models.User(birth_date=user_data.birth_date,
                     first_name=user_data.first_name,
@@ -48,14 +49,14 @@ async def add_user(user_data: schemas.User,
     # the imp without using ORM
 
     await raw_database.connect()
-    results = await raw_database.execute("""INSERT INTO "user" (email,\
+    await raw_database.execute("""INSERT INTO "user" (email,\
                         password,\
                         first_name,\
                         last_name,\
                         birth_date,\
                         server,\
-                        key,\
-                        activated) values \
+                        pin_code,\
+                        is_activated) values \
                         ('{}','{}','{}','{}','{}','{}','{}',FALSE)""".format(
                                         user_data.email,
                                         user_data.password,
@@ -65,29 +66,27 @@ async def add_user(user_data: schemas.User,
                                         client_host,
                                         pin_code
                     ))
-
-    user = db.query(models.User).from_statement(
-        text("""SELECT * FROM "user" WHERE email=:email \
-            order by id DESC limit 1""")
-    ).params(email=user_data.email).first()
     await raw_database.disconnect()
-    # return the inserted record
-    return user
+    # the insert statement return None,  this is why we have to do select
+    # in order to return the the user data
+    return await get_user(user_data.email, client_host, raw_database, db)
+    
 
 
 async def put_user(user_id: int, user_data: schemas.User, db: Session):
     pass
 
 
-async def validate_user(username, password, key, db: Session, raw_database):
+async def validate_user(username, password, pin_code,
+                        db: Session, raw_database):
     user = db.query(models.User).from_statement(
         text("""SELECT * FROM "user" WHERE email=:email AND \
             password=:secret_pass order by id DESC limit 1""")
     ).params(email=username,
-             secret_pass=password,
+             password=password,
              ).first()
     if user:
-        if key == user.key:
+        if pin_code == user.pin_code:
             await raw_database.connect()
             result = await raw_database.execute("""UPDATE user SET,\
                         validated=True)""")

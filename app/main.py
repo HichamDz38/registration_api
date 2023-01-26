@@ -1,14 +1,12 @@
-from typing import List
-from urllib import response
 from pydantic import EmailStr
-from fastapi import FastAPI, Depends, HTTPException, status,\
-                    APIRouter, Response, Request
+from fastapi import FastAPI, Depends, status,\
+                    Response, Request
 from sqlalchemy.orm import Session
-from fastapi.responses import JSONResponse
 from app import crud, models, schemas
 from app.database import SessionLocal, engine, raw_database
 from app.funcs import send_email, generate_key
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from asyncpg import exceptions
 
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
@@ -24,20 +22,24 @@ def get_db():
         db.close()
 
 
-@app.get("/users/{user.email}")
-async def get_user(email: str, db: Session = Depends(get_db)):
-    user = await crud.get_user(email, db)
+@app.get("/users/")
+async def get_user(email: EmailStr, request: Request,
+                   db: Session = Depends(get_db)):
+    client_host = request.client.host
+    user = await crud.get_user(email, client_host, raw_database, db)
     if user:
         return user
     else:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
 
 
-@app.delete("/users/{emp_id}")
-async def del_user(user_id: int, db: Session = Depends(get_db)):
-    user = crud.get_employee(user_id, db)
+@app.delete("/users/{email}")
+async def del_user(email: EmailStr, request: Request,
+                   db: Session = Depends(get_db)):
+    client_host = request.client.host
+    user = await crud.get_user(email, client_host, raw_database, db)
     if user:
-        crud.del_user(user_id, db)
+        await crud.del_user(email, client_host, raw_database, db)
         return user
     else:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
@@ -49,10 +51,13 @@ async def register_user(user_data: schemas.User,
                         db: Session = Depends(get_db)):
     client_host = request.client.host
     pin_code = generate_key()
-    user = await crud.add_user(user_data, client_host, pin_code,
-                               raw_database, db)
+    try:
+        user = await crud.add_user(user_data, client_host, pin_code,
+                                   raw_database, db)
+    except exceptions.UniqueViolationError:
+        return Response(status_code=status.HTTP_409_CONFLICT)
     if user:
-        result = send_email(user_data.server,
+        result = send_email(client_host,
                             user_data.email,
                             pin_code,
                             user_data.first_name,
@@ -84,13 +89,16 @@ async def patch_user(user_data: schemas.User_update,
 
 
 @app.get("/users/validation/")
-async def validate_user(key: str,
+async def validate_user(pin_code: str,
+                        request: Request,
                         db: Session = Depends(get_db),
                         credentials: HTTPBasicCredentials
                         = Depends(security)):
+    client_host = request.client.host
     response = await crud.validate_user(credentials.username,
                                         credentials.password,
-                                        key,
+                                        client_host,
+                                        pin_code,
                                         db,
                                         raw_database)
     if response:
