@@ -85,7 +85,7 @@ async def put_user(user_id: int, user_data: schemas.User):
 async def add_validation(user_id:int, pin_code:str, url:str, raw_database):
     """add a Validation routine"""
     await raw_database.connect()
-    await raw_database.execute("""INSERT INTO "Validation" (user_id,\
+    await raw_database.execute("""INSERT INTO "validation" (user_id,\
                         pin_code,\
                         url) values \
                         ('{}','{}','{}')""".format(user_id,
@@ -107,15 +107,21 @@ async def get_validation(url: str, raw_database):
     return dict(validation)
 
 
-async def validate_user(username, password, url, pin_code, raw_database):
-    user = await get_user(username, raw_database)
-    if user:
-        if password == user.password and pin_code == user.pin_code:
-            await raw_database.connect()
-            result = await raw_database.execute("""UPDATE user SET,\
+async def validate_user_by_url(username, password, url, raw_database):
+    validation = await get_validation(url, raw_database)
+    if validation:
+        print(validation["time_email_sent"])
+        user_id = validation["user_id"]
+        user = await get_user_by_id(user_id, raw_database)
+        if user:
+            if password == user.password and pin_code == user.pin_code:
+                await raw_database.connect()
+                result = await raw_database.execute("""UPDATE user SET,\
                         is_activated=True)""")
-            await raw_database.disconnect()
-            return user
+                await raw_database.disconnect()
+                return user
+            else:
+                return False
         else:
             return False
     else:

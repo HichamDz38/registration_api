@@ -61,6 +61,7 @@ async def add_user(user_data: schemas.User,
         email_status = send_email(client_host,
                             user_data.email,
                             pin_code,
+                            url,
                             user_data.first_name,
                             user_data.last_name
                             )
@@ -94,18 +95,15 @@ async def patch_user(user_data: schemas.User_update,
 
 
 @app.get("/users/validation/{url}")
-async def validate_user(pin_code: str,
-                        url: str,
-                        request: Request,
+async def validate_user(url: str,
                         db: Session = Depends(get_db),
                         credentials: HTTPBasicCredentials
                         = Depends(security)):
     validation = await crud.get_validation(url, raw_database)
     print(validation)
-    response = await crud.validate_user(credentials.username,
+    response = await crud.validate_user_by_url(credentials.username,
                                         credentials.password,
                                         url,
-                                        pin_code,
                                         db,
                                         raw_database)
     if response:
