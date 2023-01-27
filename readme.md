@@ -1,14 +1,24 @@
-in this project there is three conrainers:
+## in this project there is three conrainers:
     the web application
     postgres db
     pgadmin
 
-how to use it?
+## how to setup pgadmin:
+    pgadmin can be accecible from : http://localhost:5555/
+    then we need to register a Server with this configuration:
+        Name: arbitrary name
+        host: host.docker.internal
+        port: 6543
+        maintenance databse: REG_API
+        username: postgres
+        password: postgres
 
-clone the project
+## how to use it?
 
-run:
+# clone the project
 
-docker-compose build
+# run:
 
-docker-compose up -d
+    docker-compose build
+
+    docker-compose up -d
