@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str
     POSTGRES_HOSTNAME: str
 
+    PGADMIN_DEFAULT_EMAIL: str
+    PGADMIN_DEFAULT_PASSWORD: str
+
     JWT_PUBLIC_KEY: str
     JWT_PRIVATE_KEY: str
     REFRESH_TOKEN_EXPIRES_IN: int
@@ -21,7 +24,7 @@ class Settings(BaseSettings):
     MJ_APIKEY_PRIVATE: str
 
     class Config:
-        env_file = './.env'
+        env_file = './app/.env'
 
 
 settings = Settings()
