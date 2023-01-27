@@ -94,7 +94,7 @@ async def add_validation(user_id: int, pin_code: str, url: str, raw_database):
     await raw_database.disconnect()
     """as we said before insert return nothing, this is why i am returning the
     crud.get_validation"""
-    return get_validation(url, raw_database)
+    return await get_validation(url, raw_database)
 
 
 async def get_validation(url: str, raw_database):
