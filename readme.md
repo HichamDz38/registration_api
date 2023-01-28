@@ -55,7 +55,7 @@ but the combinaison server/email is unique.
 ## project architecture schema
 
 for this application i used a simple Monolothic architecture + third party SMTP
-
+<pre>
 +-------------------+
 |     Rest API      | 
 |      docker       |
@@ -80,3 +80,4 @@ for this application i used a simple Monolothic architecture + third party SMTP
  |   Postgres DB   | 
  |     docker      | 
  +-----------------+
+</pre>
