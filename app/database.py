@@ -2,7 +2,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config import settings
-from databases import Database
 
 SQLALCHEMY_DATABASE_URL = "postgresql://{}:{}@{}:{}/{}".format(
                                 settings.POSTGRES_USER,
@@ -14,9 +13,8 @@ SQLALCHEMY_DATABASE_URL = "postgresql://{}:{}@{}:{}/{}".format(
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL
 )
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(autocommit=True, autoflush=False, bind=engine)
 Base = declarative_base()
-raw_database = Database(SQLALCHEMY_DATABASE_URL)
 
 
 def get_db():

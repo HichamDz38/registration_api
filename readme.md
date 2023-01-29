@@ -1,8 +1,10 @@
 ## background
 i made sure do the work as explained, i was going to use a local SMTP docker,
 gmail(which i used before) stop allowing using SMTP, i have an SMTP project already
+
+
 you can find it here: https://github.com/HichamDz38/python_mailer_smtp
-but in the end i used a third party provider: Mailjet but it has a limit for 200 mail (Free Trial)
+but in the end i used a third party provider: Mailjet but it has a limit for 200 e-mails (Free Trial)
 
 and because the mailing process managed with a third party server,
 There is no need to use queue tasks (sending mail), with RabbitMQ for example,
@@ -17,28 +19,32 @@ but the same email can be used with diffrent website, so the email address is no
 but the combinaison server/email is unique.
 
 
-## in this project there is three conrainers:
-    the web application : Registration API
-    postgres database
-    pgadmin web interface
+## composition :
+    in this project there is three conrainers:
+        the web application : Registration API
+        postgres database
+        pgadmin web interface
 
 
 ## how to use it?
 
-# 1: clone the project
-# 2: run the command:
+## 1: clone the project
+    git clone
+## 2: run the commands:
+    cd registration_api
     docker-compose up -d --build
 
-# 2: access the api through the browser
+## 2: access the api through the browser
     use the address : http://127.0.0.1:8000/docs
     where you can test the diffrent endpoints
+
+
     GET http://127.0.0.1:8000/users/ : to get the user data using an email address
     POST http://127.0.0.1:8000/users/ : to post the data for registration the user
     DELETE http://127.0.0.1:8000/users/ : to delete the user 
 
 
-
-# 3: access to the database using pgadmin:
+## 3: access to the database using pgadmin:
     pgadmin can be accecible from : http://localhost:5555/
     credentials:
         PGADMIN_DEFAULT_EMAIL=pgadmin4@pgadmin.org
@@ -52,7 +58,7 @@ but the combinaison server/email is unique.
         username: postgres
         password: postgres
 
-## project architecture schema
+## project architecture
 
 for this application i used a simple Monolothic architecture + third party SMTP
 <pre>

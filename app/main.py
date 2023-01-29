@@ -1,32 +1,22 @@
 from pydantic import EmailStr
-from fastapi import FastAPI, Depends, status,\
-                    Response, Request, HTTPException
+from fastapi import FastAPI, Depends, status, Response, Request, HTTPException
 from sqlalchemy.orm import Session
 from app import crud, models, schemas
-from app.database import SessionLocal, engine, raw_database
+from app.database import get_db, engine
 from app.funcs import send_email, generate_key, generate_url
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from asyncpg import exceptions
+from sqlalchemy.exc import IntegrityError
 
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 security = HTTPBasic()
 
 
-# Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-@app.get("/users/")
-async def get_user(email: EmailStr, request: Request,
-                   db: Session = Depends(get_db)):
+@app.get("/users/{email}")
+async def get_user(email: EmailStr, request: Request, db: Session = Depends(get_db)):
     client_host = request.client.host
-    user = await crud.get_user(email, client_host, raw_database)
+    user = await crud.get_user_by_email(email, client_host, db)
     if user:
         return user
     else:
@@ -34,47 +24,51 @@ async def get_user(email: EmailStr, request: Request,
 
 
 @app.delete("/users/{email}")
-async def del_user(email: EmailStr, request: Request,
-                   db: Session = Depends(get_db)):
+async def del_user(email: EmailStr, request: Request, db: Session = Depends(get_db)):
     client_host = request.client.host
-    user = await crud.get_user(email, client_host, raw_database)
+    user = await crud.get_user_by_email(email, client_host, db)
     if user:
-        await crud.del_user(email, client_host, raw_database)
+        responce = await crud.del_user(email, client_host, db)
+        print(responce)
         return user
     else:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
 
 
 @app.post("/users/")
-async def add_user(user_data: schemas.User,
-                   request: Request,
-                   db: Session = Depends(get_db)):
+async def add_user(
+    user_data: schemas.User, request: Request, db: Session = Depends(get_db)
+):
     client_host = request.client.host
     pin_code = generate_key()
-    url = generate_url()
+    while True:
+        url = generate_url()
+        try:
+            await crud.get_validation(url, db)
+        except ValueError:
+            break
     try:
-        user = await crud.add_user(user_data, client_host,
-                                   raw_database, db)
-    except exceptions.UniqueViolationError:
+        user = await crud.add_user(user_data, client_host, db)
+    except IntegrityError:
         return Response(status_code=status.HTTP_409_CONFLICT)
     if user:
-        email_status = send_email(client_host,
-                                  user_data.email,
-                                  pin_code,
-                                  url,
-                                  user_data.first_name,
-                                  user_data.last_name)
+        email_status = send_email(
+            client_host,
+            user_data.email,
+            pin_code,
+            url,
+            user_data.first_name,
+            user_data.last_name,
+        )
         assert email_status.status_code == 200
-        validation = await crud.add_validation(user["id"], pin_code,
-                                               url, raw_database)
+        validation = await crud.add_validation(user["id"], pin_code, url, db)
         return user
     else:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.put("/users/{user_id}")
-async def put_users(user_data: schemas.User_update,
-                    db: Session = Depends(get_db)):
+async def put_users(user_data: schemas.User_update, db: Session = Depends(get_db)):
     user = await crud.put_user(user_data, db)
     if user:
         return user
@@ -83,8 +77,7 @@ async def put_users(user_data: schemas.User_update,
 
 
 @app.patch("/users/{user_id}")
-async def patch_user(user_data: schemas.User_update,
-                     db: Session = Depends(get_db)):
+async def patch_user(user_data: schemas.User_update, db: Session = Depends(get_db)):
     user = await crud.patch_user(user_data, db)
     if user:
         return user
@@ -93,19 +86,19 @@ async def patch_user(user_data: schemas.User_update,
 
 
 @app.get("/users/validation/{url}")
-async def validate_user(url: str,
-                        db: Session = Depends(get_db),
-                        credentials: HTTPBasicCredentials
-                        = Depends(security)):
+async def validate_user(
+    url: str,
+    db: Session = Depends(get_db),
+    credentials: HTTPBasicCredentials = Depends(security),
+):
     try:
-        await crud.get_validation(url, raw_database)
+        await crud.get_validation(url, db)
     except ValueError:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     try:
-        response = await crud.validate_user_by_url(credentials.username,
-                                                   credentials.password,
-                                                   url,
-                                                   raw_database)
+        response = await crud.validate_user_by_url(
+            credentials.username, credentials.password, url, db
+        )
     except TimeoutError:
         return Response(status_code=status.HTTP_408_REQUEST_TIMEOUT)
     except AttributeError:

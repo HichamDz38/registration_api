@@ -16,7 +16,6 @@ class User(Base):
     last_name = Column(String(20), nullable=True)
     birth_date = Column(Date, nullable=True)
     server = Column(String(20), nullable=True)
-    pin_code = Column(String(4), nullable=True)
     is_activated = Column(Boolean, nullable=True)
     time_created = Column(TIMESTAMP(timezone=True), server_default=func.now())
     time_updated = Column(TIMESTAMP(timezone=True), onupdate=func.now())
@@ -27,9 +26,9 @@ class User(Base):
 class Validation(Base):
     __tablename__ = 'validation'
     id = Column(Integer, Identity(cycle=True), primary_key=True)
-    user_id = Column(Integer, ForeignKey("user.id"), unique=True)
+    user_id = Column(Integer, ForeignKey("user.id"))
     pin_code = Column(String(4), nullable=False)
-    url = Column(String(20), nullable=False)
+    url = Column(String(20), nullable=False, unique=True)
     time_email_sent = Column(TIMESTAMP(timezone=True),
                              server_default=func.now(),
                              onupdate=func.now())
