@@ -14,7 +14,7 @@ security = HTTPBasic()
 
 
 @app.get("/users/{email}")
-async def get_user(email: EmailStr, request: Request, db: Session = Depends(get_db)):
+async def get_user_by_email(email: EmailStr, request: Request, db: Session = Depends(get_db)):
     client_host = request.client.host
     user = await crud.get_user_by_email(email, client_host, db)
     if user:
@@ -28,8 +28,8 @@ async def del_user(email: EmailStr, request: Request, db: Session = Depends(get_
     client_host = request.client.host
     user = await crud.get_user_by_email(email, client_host, db)
     if user:
-        responce = await crud.del_user(email, client_host, db)
-        print(responce)
+        response = await crud.del_validation_by_id(user.id, db)
+        response = await crud.del_user(email, client_host, db)
         return user
     else:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
@@ -37,7 +37,7 @@ async def del_user(email: EmailStr, request: Request, db: Session = Depends(get_
 
 @app.post("/users/")
 async def add_user(
-    user_data: schemas.User, request: Request, db: Session = Depends(get_db)
+        user_data: schemas.User, request: Request, db: Session = Depends(get_db)
 ):
     client_host = request.client.host
     pin_code = generate_key()
@@ -85,11 +85,11 @@ async def patch_user(user_data: schemas.User_update, db: Session = Depends(get_d
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@app.get("/users/validation/{url}")
+@app.get("/validation/{url}")
 async def validate_user(
-    url: str,
-    db: Session = Depends(get_db),
-    credentials: HTTPBasicCredentials = Depends(security),
+        url: str,
+        db: Session = Depends(get_db),
+        credentials: HTTPBasicCredentials = Depends(security),
 ):
     try:
         await crud.get_validation(url, db)

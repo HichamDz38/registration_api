@@ -8,11 +8,11 @@ from sqlalchemy import text
 NoneType = type(None)
 
 
-async def get_user_by_email(email: EmailStr, client_host: str, db:Session):
+async def get_user_by_email(email: EmailStr, client_host: str, db: Session):
     """select user from email and server"""
-    query ="""SELECT * FROM "user" WHERE \
+    query = """SELECT * FROM "user" WHERE \
         email=:email AND server=:client_host"""
-    values = {"email":email, "client_host":client_host}
+    values = {"email": email, "client_host": client_host}
     user = db.execute(query, values)
     # return the selected user
     user = user.mappings().all()
@@ -21,10 +21,10 @@ async def get_user_by_email(email: EmailStr, client_host: str, db:Session):
     return False
 
 
-def get_user_by_id(user_id: int,  db:Session):
+async def get_user_by_id(user_id: int, db: Session):
     """select user by using the id only"""
-    query ="""SELECT * FROM "user" WHERE id=:user_id"""
-    values = {"user_id":user_id}
+    query = """SELECT * FROM "user" WHERE id=:user_id"""
+    values = {"user_id": user_id}
     user = db.execute(query, values)
     # return the selected user
     user = user.mappings().all()
@@ -34,20 +34,19 @@ def get_user_by_id(user_id: int,  db:Session):
         return False
 
 
-async def del_user(email: EmailStr, client_host: str,  db:Session):
+async def del_user(email: EmailStr, client_host: str, db: Session):
     """delete user based on  email and server """
     query = """DELETE FROM "user" WHERE email=:email and server=:server"""
     values = {"email": email, "server": client_host}
     result = db.execute(query, values)
     # return True after doing the delete
-    print(result, type(result))
     return result
 
 
-def add_user(
-    user_data: schemas.User,
-    client_host: str,
-    db: Session,
+async def add_user(
+        user_data: schemas.User,
+        client_host: str,
+        db: Session,
 ):
     """
     # register/add user
@@ -73,19 +72,19 @@ def add_user(
                         server,\
                         is_activated) values \
                         (:email,:password,:first_name,:last_name,:birth_date,:server,FALSE)"""
-    values = {"email":user_data.email, 
-              "password":user_data.password,
-              "first_name":user_data.first_name,
-              "last_name":user_data.last_name,
-              "birth_date":user_data.birth_date,
-              "server":client_host}              
+    values = {"email": user_data.email,
+              "password": user_data.password,
+              "first_name": user_data.first_name,
+              "last_name": user_data.last_name,
+              "birth_date": user_data.birth_date,
+              "server": client_host}
     db.execute(query, values)
     # the insert statement return None,  this is why we have to do select
     # in order to return the the user data
-    return get_user_by_email(user_data.email, client_host, db)
+    return await get_user_by_email(user_data.email, client_host, db)
 
 
-def put_user(user_data: schemas.User, client_host: str, raw_database):
+async def put_user(user_data: schemas.User, client_host: str, raw_database):
     """replace the user information"""
     user = raw_database.execute(
         """UPDATE "user" SET \
@@ -96,21 +95,21 @@ def put_user(user_data: schemas.User, client_host: str, raw_database):
     return user
 
 
-def add_validation(user_id: int, pin_code: str, url: str,  db:Session):
+async def add_validation(user_id: int, pin_code: str, url: str, db: Session):
     """add a Validation routine"""
     query = """INSERT INTO "validation" (user_id,pin_code,url) values(:user_id,:pin_code,:url)"""
-    values = {"user_id":user_id, "pin_code": pin_code,"url": url}
+    values = {"user_id": user_id, "pin_code": pin_code, "url": url}
     db.execute(query, values)
-    """as we said before insert return nothing, this is why i am returning the
-    crud.get_validation"""
+    # as we said before insert return nothing, this is why i am returning the
+    # crud.get_validation
     return get_validation(url, db)
 
 
-def get_validation(url: str, db: Session):
-    """select validation based on the url without ORM"""
-    query = """SELECT * FROM "validation" WHERE url=:url limit 1"""
+async def get_validation(url: str, db: Session):
+    """select validation based on the url"""
+    query = """SELECT * FROM "validation" WHERE url=:url"""
     values = {"url": url}
-    validation = db.execute(query, values)    
+    validation = db.execute(query, values)
     # return the selected user
     validation = validation.mappings().all()
     if validation:
@@ -119,16 +118,25 @@ def get_validation(url: str, db: Session):
         raise ValueError
 
 
-def del_validation(url: str, db: Session):
+async def del_validation_by_url(url: str, db: Session):
     """select validation based on the url without ORM"""
     query = """DELETE FROM "validation" WHERE url=:url"""
     values = {"url": url}
-    validation = db.execute(query, values)
+    result = db.execute(query, values)
     # return the selected user
-    return True
+    return result
 
 
-def validate_user_by_url(username:str, password:str, url:str, db:Session):
+async def del_validation_by_id(user_id: int, db: Session):
+    """select validation based on the url without ORM"""
+    query = """DELETE FROM "validation" WHERE user_id=:user_id"""
+    values = {"user_id": user_id}
+    result = db.execute(query, values)
+    # return the selected user
+    return result
+
+
+async def validate_user_by_url(username: str, password: str, url: str, db: Session):
     validation = get_validation(url, db)
     if validation:
         sent_time = validation["time_email_sent"]

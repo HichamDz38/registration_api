@@ -6,7 +6,7 @@ services:
     ports:
       - "6432:5432"
     env_file:
-      - ./app/.env
+      - .env
     volumes:
       - postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -17,7 +17,7 @@ services:
       dockerfile: Dockerfile
     command: uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8000
     env_file:
-      - ./app/.env
+      - .env
     volumes:
       - .:/capp
     ports:
@@ -32,7 +32,7 @@ services:
     ports:
       - "5555:80"
     env_file:
-      - ./app/.env
+      - .env
     restart: unless-stopped
 
 volumes:
