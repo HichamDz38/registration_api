@@ -67,24 +67,6 @@ async def add_user(
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@app.put("/users/{user_id}")
-async def put_users(user_data: schemas.User_update, db: Session = Depends(get_db)):
-    user = await crud.put_user(user_data, db)
-    if user:
-        return user
-    else:
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@app.patch("/users/{user_id}")
-async def patch_user(user_data: schemas.User_update, db: Session = Depends(get_db)):
-    user = await crud.patch_user(user_data, db)
-    if user:
-        return user
-    else:
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
 @app.get("/validation/{url}")
 async def validate_user(
         url: str,

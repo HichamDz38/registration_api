@@ -43,11 +43,9 @@ async def del_user(email: EmailStr, client_host: str, db: Session):
     return result
 
 
-async def add_user(
-        user_data: schemas.User,
-        client_host: str,
-        db: Session,
-):
+async def add_user(user_data: schemas.User,
+                   client_host: str,
+                   db: Session):
     """
     # register/add user
     # this is the implementation using orm
@@ -82,17 +80,6 @@ async def add_user(
     # the insert statement return None,  this is why we have to do select
     # in order to return the the user data
     return await get_user_by_email(user_data.email, client_host, db)
-
-
-async def put_user(user_data: schemas.User, client_host: str, raw_database):
-    """replace the user information"""
-    user = raw_database.execute(
-        """UPDATE "user" SET \
-                    is_activated=True where id={}""".format(
-            user_data
-        )
-    )
-    return user
 
 
 async def add_validation(user_id: int, pin_code: str, url: str, db: Session):
