@@ -29,7 +29,7 @@ but the combinaison server/email is unique.
 ## how to use it?
 
 ## 1: clone the project
-    git clone git@github.com:HichamDz38/registration_api.git
+    git clone https://github.com/HichamDz38/registration_api
 ## 2: run the commands:
     cd registration_api
     docker-compose up -d --build
