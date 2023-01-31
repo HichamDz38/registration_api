@@ -7,38 +7,44 @@ from app.funcs import send_email, generate_key, generate_url
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from asyncpg import exceptions
 from sqlalchemy.exc import IntegrityError
+import logging
 
+logging.basicConfig(level=logging.DEBUG)
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 security = HTTPBasic()
 
 
 @app.get("/users/{email}")
-async def get_user_by_email(email: EmailStr, request: Request, db: Session = Depends(get_db)):
+async def get_user_by_email(email: EmailStr,
+                            request: Request,
+                            db: Session = Depends(get_db)):
     client_host = request.client.host
-    user = await crud.get_user_by_email(email, client_host, db)
-    if user:
+    try:
+        user = await crud.get_user_by_email(email, client_host, db)
         return user
-    else:
+    except ValueError:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
 
 
 @app.delete("/users/{email}")
-async def del_user(email: EmailStr, request: Request, db: Session = Depends(get_db)):
+async def del_user(email: EmailStr,
+                   request: Request,
+                   db: Session = Depends(get_db)):
     client_host = request.client.host
-    user = await crud.get_user_by_email(email, client_host, db)
-    if user:
+    try:
+        user = await crud.get_user_by_email(email, client_host, db)
         response = await crud.del_validation_by_id(user.id, db)
         response = await crud.del_user(email, client_host, db)
         return user
-    else:
+    except ValueError:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
 
 
 @app.post("/users/")
-async def add_user(
-        user_data: schemas.User, request: Request, db: Session = Depends(get_db)
-):
+async def add_user(user_data: schemas.User,
+                   request: Request,
+                   db: Session = Depends(get_db)):
     client_host = request.client.host
     pin_code = generate_key()
     while True:
@@ -48,9 +54,15 @@ async def add_user(
         except ValueError:
             break
     try:
-        user = await crud.add_user(user_data, client_host, db)
+        result = await crud.add_user(user_data, client_host, db)
+        # the insert statement return None,  this is why we have to do select
+        # in order to return the the user data
+        user = await crud.get_user_by_email(user_data.email, client_host, db)
     except IntegrityError:
         return Response(status_code=status.HTTP_409_CONFLICT)
+    except ValueError:
+        logging.CRITICAL("this is must not happen, check the code")
+        return Response(status_code=status.HTTP_501_NOT_IMPLEMENTED)
     if user:
         email_status = send_email(
             client_host,
@@ -60,7 +72,8 @@ async def add_user(
             user_data.first_name,
             user_data.last_name,
         )
-        assert email_status.status_code == 200
+        if not email_status.status_code == 200:
+            logging.CRITICAL("email not send, subscription expired or no internet")
         validation = await crud.add_validation(user["id"], pin_code, url, db)
         return user
     else:
@@ -74,20 +87,22 @@ async def validate_user(
         credentials: HTTPBasicCredentials = Depends(security),
 ):
     try:
-        await crud.get_validation(url, db)
+        validation = await crud.get_validation(url, db)
     except ValueError:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     try:
-        response = await crud.validate_user_by_url(
-            credentials.username, credentials.password, url, db
+        user = crud.get_user_by_id(validation["user_id"], db)
+        result = await crud.validate_user_by_url(
+            credentials.username, credentials.password, validation, user, db
         )
     except TimeoutError:
-        return Response(status_code=status.HTTP_408_REQUEST_TIMEOUT)
+        return Response(status_code=status.HTTP_410_GONE)
     except AttributeError:
         return Response(status_code=status.HTTP_401_UNAUTHORIZED)
     except ValueError:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
-    if response:
+    if result:
         return Response(status_code=status.HTTP_200_OK)
     else:
-        return Response(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logging.CRITICAL("this will never print unless something wrong in the code")
+        return Response(status_code=status.HTTP_501_NOT_IMPLEMENTED)

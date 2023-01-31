@@ -16,5 +16,9 @@ class User(BaseModel):
         orm_mode = False
 
 
-class User_update(User):
-    pass
+class Validation(BaseModel):
+    id: int
+    user_id: int
+    pin_code: str
+    url: str
+    time_email_sent: date
