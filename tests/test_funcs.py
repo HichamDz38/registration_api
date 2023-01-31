@@ -9,18 +9,16 @@ import asyncio
 def test_generate_url():
     async def inner():
         url = generate_url()
+        assert type(url) == str
         assert len(url) == 20
         assert all([d not in url for d in "0123456789-+*/!£$%^&*()_+-="])
-
     asyncio.get_event_loop().run_until_complete(inner())
 
 
 def test_generate_key():
     async def inner():
         pin_code = generate_key()
+        assert type(pin_code) == str
         assert len(pin_code) == 4
         assert all([c not in pin_code for c in ascii_letters])
-
     asyncio.get_event_loop().run_until_complete(inner())
-
-
