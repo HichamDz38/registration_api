@@ -11,12 +11,12 @@ There is no need to use queue tasks (sending mail), with RabbitMQ for example,
 Also for caching with Redis,it's not neccecary for this specific application.
 
 for the validation process, it's done via a link, there is a pin code yes.
-But i did it with just using a link insead, if the user has the link he has the pin_code,
+But i did it just using a link instead, if the user has the link he has the pin_code,
 And also it's better than emailing the pin_code alone.
 
-the api can be used with diffrent web_application, or server in another word,
-but the same email can be used with diffrent website, so the email address is not unique
-but the combinaison server/email is unique.
+the api can be used with different web_application, or server in another word,
+but the same email can be used with different website, so the email address is not unique.
+However, the combination server/email is unique.
 
 
 ## composition :
@@ -35,13 +35,14 @@ but the combinaison server/email is unique.
     docker-compose up -d --build
 
 ## 2: access the api through the browser
-    use the address : http://127.0.0.1:8000/docs
+    use the address : http://127.0.0.1:8008/docs
     where you can test the diffrent endpoints
 
 
-    GET http://127.0.0.1:8000/users/ : to get the user data using an email address
-    POST http://127.0.0.1:8000/users/ : to post the data for registration the user
-    DELETE http://127.0.0.1:8000/users/ : to delete the user 
+    GET http://127.0.0.1:8008/users/ : to get the user data using an email address
+    POST http://127.0.0.1:8008/users/ : to post the data for registration the user
+    DELETE http://127.0.0.1:8008/users/ : to delete the user 
+    GET http://127.0.0.1:8008/validation/ : to validate the user 
 
 
 ## 3: access to the database using pgadmin
