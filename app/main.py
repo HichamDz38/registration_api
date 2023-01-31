@@ -73,10 +73,10 @@ async def add_user(user_data: schemas.User,
             user_data.last_name,
         )
         if not email_status.status_code == 200:
-            logging.CRITICAL("email not send, subscription expired or no internet")
-            logging.DEBUG(f"but here is the pin_code here{pin_code}")
-            logging.DEBUG(f"you need to use this url to validate :")
-            logging.DEBUG(f"http://{get_hostname}:{settings.WEB_APP_PORT}/validation/{url}")
+            logging.critical("email not send, subscription expired or no internet")
+            logging.debug(f"but here is the pin_code here{pin_code}")
+            logging.debug(f"you need to use this url to validate :")
+            logging.debug(f"http://{get_hostname()}:{settings.WEB_APP_PORT}/validation/{url}")
 
         validation = await crud.add_validation(user["id"], pin_code, url, db)
         return user
