@@ -15,13 +15,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8000
+    command: uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port ${WEB_APP_PORT}
     env_file:
       - .env
     volumes:
       - .:/capp
     ports:
-      - "8000:8000"
+      - "${WEB_APP_PORT}:${WEB_APP_PORT}"
     depends_on:
       - db
 

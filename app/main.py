@@ -1,13 +1,13 @@
 from pydantic import EmailStr
 from fastapi import FastAPI, Depends, status, Response, Request, HTTPException
 from sqlalchemy.orm import Session
-from app import crud, models, schemas
-from app.database import get_db, engine
-from app.funcs import send_email, generate_key, generate_url
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from asyncpg import exceptions
 from sqlalchemy.exc import IntegrityError
 import logging
+from app import crud, models, schemas
+from app.database import get_db, engine
+from app.funcs import send_email, generate_key, generate_url, get_hostname
+from app.config import settings
 
 logging.basicConfig(level=logging.DEBUG)
 models.Base.metadata.create_all(bind=engine)
@@ -74,6 +74,10 @@ async def add_user(user_data: schemas.User,
         )
         if not email_status.status_code == 200:
             logging.CRITICAL("email not send, subscription expired or no internet")
+            logging.DEBUG(f"but here is the pin_code here{pin_code}")
+            logging.DEBUG(f"you need to use this url to validate :")
+            logging.DEBUG(f"http://{get_hostname}:{settings.WEB_APP_PORT}/validation/{url}")
+
         validation = await crud.add_validation(user["id"], pin_code, url, db)
         return user
     else:
@@ -91,7 +95,7 @@ async def validate_user(
     except ValueError:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     try:
-        user = crud.get_user_by_id(validation["user_id"], db)
+        user = await crud.get_user_by_id(validation["user_id"], db)
         result = await crud.validate_user_by_url(
             credentials.username, credentials.password, validation, user, db
         )

@@ -32,7 +32,7 @@ def send_email(server, email, pin_code, url, firstname="", lastname=""):
         "Html-part": f"<h3>welcome to {server}</h3><br/>\
          please use this pin code : {pin_code} \
          to validate your registration<br/>\
-         or follow up this link http://{hostname}:8000/users/validation/{url}\
+         or follow up this link http://{hostname}:{settings.WEB_APP_PORT}/validation/{url}\
          code will expire aften 1min",
     }
     result = mailjet.send.create(data=data)

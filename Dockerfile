@@ -13,10 +13,10 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 # copy project
 COPY ./app /code/app
-COPY ./.env /code/.env
+COPY ./.env_docker /code/.env
 COPY ./alembic.ini /code/alembic.ini
 COPY ./alembic /code/alembic
 COPY ./tests /code/tests
 
 # run the app
-CMD ["uvicorn", "app.main:app", "--host=0.0.0.0" , "--reload" , "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host=0.0.0.0" , "--reload" , "--port", "${WEB_APP_PORT}"]
