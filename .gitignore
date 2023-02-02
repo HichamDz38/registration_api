@@ -1,5 +1,10 @@
 forme__*
 __pycache__/*
+**/__pycache__/**
+**\__pycache__\**
 env/*
 regi_venv/*
+/.vscode
+/.idea
+app/__pycache__
 codiga.yml
